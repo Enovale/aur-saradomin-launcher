@@ -41,7 +41,7 @@ build() {
 	dotnet restore
 	cd Saradomin
 	#--no-self-contained
-	dotnet publish --runtime linux-x64 --sc -o "${srcdir}/build" -c Release -p:PublishTrimmed=false -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+	dotnet publish --runtime linux-x64 --sc -o "${srcdir}/build" -c Release /p:DebugType=None /p:DebugSymbols=false -p:PublishTrimmed=false -p:PublishReadyToRun=true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
 }
 
 package() {
