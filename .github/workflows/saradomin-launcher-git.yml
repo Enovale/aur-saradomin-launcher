@@ -1,0 +1,87 @@
+name: saradomin-launcher-git
+
+on:
+  push:
+    paths:
+      - PKGBUILD-git
+  pull_request:
+    branches:
+      - main
+    paths:
+      - PKGBUILD-git
+  workflow_dispatch:
+    inputs:
+      aur:
+        description: 'Push to AUR?'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ghcr.io/centzilius/arch-makepkg:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: rename PKGBUILD
+        run: mv PKGBUILD-git PKGBUILD
+      - name: Prepare workspace
+        run: |
+          mkdir /home/builder/workspace
+          rsync -ahvP /__w/aur-saradomin-launcher/aur-saradomin-launcher/ /home/builder/workspace/
+          chown -R builder:builder /home/builder/
+      - name: Build package
+        run: |
+          cd /home/builder/workspace
+          sudo -u builder makepkg -scf --noconfirm
+      - name: Rename artifact
+        run: |
+          cd /home/builder/workspace
+          mv *.pkg.tar.zst saradomin-launcher-git.pkg.tar.zst
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: saradomin-launcher
+          path: /home/builder/workspace/*.pkg.tar.zst
+          if-no-files-found: error
+  aur:
+    needs: build
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event.inputs.aur == 'true' }}
+    runs-on: ubuntu-latest
+    container: ghcr.io/centzilius/arch-makepkg:latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Checkout AUR
+        run: |
+          cd /root
+          mkdir -p .ssh
+          chmod 700 .ssh
+          ssh-keyscan aur.archlinux.org >> /root/.ssh/known_hosts
+          echo "${{ secrets.ssh_key }}" > /root/.ssh/id_ed25519
+          chmod 400 /root/.ssh/*
+          ssh-keygen -y -f /root/.ssh/id_ed25519 > /root/.ssh/id_ed25519.pub
+          cd /tmp
+          git clone ssh://aur@aur.archlinux.org/saradomin-launcher-git.git aur
+      - name: rename PKGBUILD
+        run: mv PKGBUILD-git PKGBUILD
+      - name: Copy files
+        run: |
+          rsync -ahvP $GITHUB_WORKSPACE/{PKGBUILD,Saradomin.desktop} /tmp/aur/
+      - name: Generate .SRCINFO
+        run: |
+          chown -R builder:builder /tmp/aur/
+          cd /tmp/aur/
+          sudo -u builder makepkg --printsrcinfo | tee .SRCINFO
+          chown -R root:root /tmp/aur/
+      - name: Push
+        run: |
+          cd /tmp/aur/
+          git config user.email "enova@waifu.club"
+          git config user.name "Enova"
+          git add --all
+          git commit -m 'Sync from GitHub'
+          git push -u origin master
+      - name: Cleanup SSH
+        if: always()
+        run: rm -rf /root/.ssh
