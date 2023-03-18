@@ -56,12 +56,6 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/centzilius/arch-makepkg:latest
     steps:
-      - name: Login to GHCR
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout repo
         uses: actions/checkout@v3
       - name: Checkout AUR
