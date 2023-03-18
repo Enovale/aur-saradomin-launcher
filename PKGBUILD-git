@@ -19,7 +19,7 @@ source=(
 conflicts=("${_pkgname}")
 provides=("saradomin-launcher=${pkgver}")
 sha256sums=('SKIP'
-            'a2e20fcf28a03020ecdb1fc2a3f42582d427b5c28002b1b2339d2b5cb3b4ae6e')
+            'a8ae565774939d1c2a48c2d4b69a150d23015fd3f09a69663dc410d5a9802957')
 options=(!strip)
 
 pkgver() {
